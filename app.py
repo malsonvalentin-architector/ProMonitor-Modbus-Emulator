@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-ProMonitor.kz Enhanced Modbus Emulator v3.0 with Web UI
-========================================================
+ProMonitor.kz Enhanced Modbus Emulator v3.1 - Single Port Mode
+===============================================================
 
 Features:
-- Modbus TCP Server (port 8000)
-- Web Dashboard (port 8080) 
-- REST API for manual control
-- Scenario simulation (fire, leak, power failure)
-- Real-time monitoring
+- Modbus TCP Server (Railway PORT)
+- Web Dashboard (same port via path /dashboard)
+- REST API (/api/*)
+- Automatic port detection from Railway
 
-Author: AI Assistant
+This version runs ONLY Web UI on Railway's PORT.
+Modbus will be accessed via Railway Private Network on a different port.
+
+Author: AI Assistant  
 Date: 2025-10-23
 """
 
@@ -39,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# Sensor Data Manager
+# Sensor Data Manager  
 # ============================================================================
 class SensorDataManager:
     """Управление данными всех датчиков"""
@@ -67,47 +69,37 @@ class SensorDataManager:
             'power3': {'address': 4004, 'value': 5.1, 'min': 2.0, 'max': 15.0, 'unit': 'kW', 'type': 'power'},
         }
         
-        self.scenario = 'normal'  # normal, fire, leak, power_failure
-        self.manual_mode = {}  # {sensor_id: manual_value}
+        self.scenario = 'normal'
+        self.manual_mode = {}
         self.lock = threading.Lock()
     
     def update_values(self):
         """Автоматическое обновление значений"""
         with self.lock:
             for sensor_id, data in self.sensors.items():
-                # Пропустить датчики в ручном режиме
                 if sensor_id in self.manual_mode:
                     continue
                 
-                # Применить сценарии
                 if self.scenario == 'fire':
                     if data['type'] == 'temp':
-                        # Резкий рост температуры
                         data['value'] = min(data['value'] + random.uniform(2.0, 5.0), 60.0)
                     elif data['type'] == 'power':
-                        # Рост энергопотребления
                         data['value'] = min(data['value'] + random.uniform(1.0, 3.0), 25.0)
                 
                 elif self.scenario == 'leak':
                     if data['type'] == 'pressure':
-                        # Падение давления
                         data['value'] = max(data['value'] - random.uniform(0.5, 1.5), 0.1)
                     elif data['type'] == 'temp':
-                        # Локальное охлаждение
                         data['value'] = max(data['value'] - random.uniform(0.5, 1.0), 5.0)
                 
                 elif self.scenario == 'power_failure':
                     if data['type'] == 'power':
-                        # Падение мощности
                         data['value'] = max(data['value'] - random.uniform(2.0, 5.0), 0.0)
                 
                 else:  # normal
-                    # Нормальные колебания
                     trend = math.sin(time.time() / 10.0) * 0.5
                     noise = random.uniform(-0.3, 0.3)
                     new_value = data['value'] + trend + noise
-                    
-                    # Ограничить диапазоном
                     data['value'] = max(data['min'], min(data['max'], new_value))
     
     def set_manual_value(self, sensor_id, value):
@@ -135,7 +127,7 @@ class SensorDataManager:
         if scenario in valid_scenarios:
             with self.lock:
                 self.scenario = scenario
-                self.manual_mode = {}  # Сбросить ручной режим
+                self.manual_mode = {}
             logger.warning(f"⚠️ Scenario changed: {scenario.upper()}")
             return True
         return False
@@ -165,7 +157,6 @@ class SensorDataManager:
             for sensor_id, data in self.sensors.items():
                 addr = data['address']
                 if start_address <= addr < start_address + count * 2:
-                    # Float32 = 2 регистра
                     value_bytes = struct.pack('>f', data['value'])
                     reg1, reg2 = struct.unpack('>HH', value_bytes)
                     registers.extend([reg1, reg2])
@@ -174,12 +165,12 @@ class SensorDataManager:
 
 
 # ============================================================================
-# Modbus TCP Server
+# Modbus TCP Server (на отдельном порту для internal use)
 # ============================================================================
 class ModbusTCPServer:
-    """Modbus TCP Server для совместимости с ProMonitor"""
+    """Modbus TCP Server для ProMonitor Celery"""
     
-    def __init__(self, host='0.0.0.0', port=8000, data_manager=None):
+    def __init__(self, host='0.0.0.0', port=5020, data_manager=None):
         self.host = host
         self.port = port
         self.data_manager = data_manager
@@ -188,30 +179,33 @@ class ModbusTCPServer:
     
     def start(self):
         """Запустить сервер"""
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(5)
-        self.running = True
-        
-        logger.info(f"✅ Modbus TCP Server Started")
-        logger.info(f"📡 Listening on {self.host}:{self.port}")
-        
-        while self.running:
-            try:
-                client_socket, address = self.server_socket.accept()
-                threading.Thread(
-                    target=self.handle_client,
-                    args=(client_socket, address),
-                    daemon=True
-                ).start()
-            except Exception as e:
-                if self.running:
-                    logger.error(f"❌ Accept error: {e}")
+        try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(5)
+            self.running = True
+            
+            logger.info(f"✅ Modbus TCP Server Started")
+            logger.info(f"📡 Listening on {self.host}:{self.port}")
+            
+            while self.running:
+                try:
+                    client_socket, address = self.server_socket.accept()
+                    threading.Thread(
+                        target=self.handle_client,
+                        args=(client_socket, address),
+                        daemon=True
+                    ).start()
+                except Exception as e:
+                    if self.running:
+                        logger.error(f"❌ Accept error: {e}")
+        except Exception as e:
+            logger.error(f"❌ Failed to start Modbus server: {e}")
     
     def handle_client(self, client_socket, address):
         """Обработка клиента"""
-        logger.info(f"🔌 Client connected: {address[0]}:{address[1]}")
+        logger.info(f"🔌 Modbus client connected: {address[0]}:{address[1]}")
         
         try:
             while self.running:
@@ -226,27 +220,24 @@ class ModbusTCPServer:
             logger.error(f"❌ Client error: {e}")
         finally:
             client_socket.close()
-            logger.info(f"🔌 Client disconnected: {address[0]}")
+            logger.info(f"🔌 Modbus client disconnected: {address[0]}")
     
     def process_modbus_request(self, data):
         """Обработка Modbus запроса"""
         if len(data) < 12:
             return self.error_response(data, 0x01)
         
-        # Парсинг Modbus TCP
         transaction_id = struct.unpack('>H', data[0:2])[0]
         protocol_id = struct.unpack('>H', data[2:4])[0]
         unit_id = data[6]
         function_code = data[7]
         
-        if function_code == 0x03:  # Read Holding Registers
+        if function_code == 0x03:
             start_address = struct.unpack('>H', data[8:10])[0]
             count = struct.unpack('>H', data[10:12])[0]
             
-            # Читать регистры
             registers = self.data_manager.read_registers(start_address, count)
             
-            # Формировать ответ
             byte_count = len(registers) * 2
             response = struct.pack('>HHHBB', transaction_id, protocol_id, byte_count + 3, unit_id, function_code)
             response += struct.pack('B', byte_count)
@@ -275,14 +266,14 @@ class ModbusTCPServer:
 class WebUIHandler(BaseHTTPRequestHandler):
     """HTTP обработчик для веб-интерфейса"""
     
-    data_manager = None  # Will be set externally
+    data_manager = None
     
     def do_GET(self):
         """Обработка GET запросов"""
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         
-        if path == '/':
+        if path == '/' or path == '/dashboard':
             self.serve_dashboard()
         elif path == '/api/sensors':
             self.serve_sensor_data()
@@ -315,7 +306,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             self.send_error(404)
     
     def serve_dashboard(self):
-        """Главная страница Dashboard"""
+        """Главная страница Dashboard - SAME AS BEFORE"""
         html = """<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -330,10 +321,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             color: #333;
             padding: 20px;
         }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
         header {
             background: white;
             padding: 20px;
@@ -341,10 +329,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-        h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
+        h1 { color: #667eea; margin-bottom: 10px; }
         .status {
             display: inline-block;
             padding: 5px 15px;
@@ -391,20 +376,14 @@ class WebUIHandler(BaseHTTPRequestHandler):
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .sensor-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
+        .sensor-card h3 { color: #667eea; margin-bottom: 10px; }
         .sensor-value {
             font-size: 32px;
             font-weight: bold;
             color: #333;
             margin: 10px 0;
         }
-        .sensor-unit {
-            font-size: 18px;
-            color: #666;
-        }
+        .sensor-unit { font-size: 18px; color: #666; }
         .manual-badge {
             display: inline-block;
             background: #f59e0b;
@@ -414,9 +393,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             font-size: 12px;
             margin-left: 10px;
         }
-        .sensor-controls {
-            margin-top: 15px;
-        }
+        .sensor-controls { margin-top: 15px; }
         .sensor-controls input {
             width: 120px;
             padding: 8px;
@@ -424,15 +401,8 @@ class WebUIHandler(BaseHTTPRequestHandler):
             border-radius: 5px;
             margin-right: 10px;
         }
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-        .timestamp {
-            color: #666;
-            font-size: 14px;
-            margin-top: 10px;
-        }
+        .btn-small { padding: 6px 12px; font-size: 14px; }
+        .timestamp { color: #666; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -456,8 +426,6 @@ class WebUIHandler(BaseHTTPRequestHandler):
     </div>
     
     <script>
-        const API_BASE = '';
-        
         async function fetchSensors() {
             try {
                 const response = await fetch('/api/sensors');
@@ -469,16 +437,13 @@ class WebUIHandler(BaseHTTPRequestHandler):
         }
         
         function updateUI(data) {
-            // Update timestamp
             document.getElementById('timestamp').textContent = 
                 'Last updated: ' + new Date(data.timestamp).toLocaleString();
             
-            // Update scenario
             const scenarioElement = document.getElementById('current-scenario');
             scenarioElement.textContent = data.scenario.toUpperCase().replace('_', ' ');
             scenarioElement.className = 'status ' + data.scenario;
             
-            // Update sensors
             const container = document.getElementById('sensors-container');
             container.innerHTML = '';
             
@@ -492,7 +457,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             const card = document.createElement('div');
             card.className = 'sensor-card';
             
-            const title = id.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const title = id.replace('_', ' ').replace(/\\b\\w/g, l => l.toUpperCase());
             const manualBadge = sensor.manual ? '<span class="manual-badge">MANUAL</span>' : '';
             
             card.innerHTML = `
@@ -551,7 +516,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
                 await fetch(`/api/sensor/${sensorId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ value })
+                    body: JSON.stringify({value})
                 });
                 fetchSensors();
             } catch (error) {
@@ -572,10 +537,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
             }
         }
         
-        // Auto-refresh every 2 seconds
         setInterval(fetchSensors, 2000);
-        
-        // Initial fetch
         fetchSensors();
     </script>
 </body>
@@ -596,8 +558,8 @@ class WebUIHandler(BaseHTTPRequestHandler):
         status = {
             'status': 'online',
             'timestamp': datetime.now().isoformat(),
-            'modbus_port': 8000,
-            'web_port': 8080
+            'modbus_port': 5020,
+            'web_port': int(os.environ.get('PORT', 8080))
         }
         self.send_json_response(status)
     
@@ -646,12 +608,15 @@ class WebUIHandler(BaseHTTPRequestHandler):
 def main():
     """Главная функция"""
     logger.info("=" * 70)
-    logger.info("🚀 ProMonitor Enhanced Modbus Emulator v3.0")
+    logger.info("🚀 ProMonitor Enhanced Modbus Emulator v3.1 (Single Port)")
     logger.info("=" * 70)
     
-    # Получить порты из окружения
-    modbus_port = int(os.environ.get('PORT', 8000))
-    web_port = int(os.environ.get('WEB_PORT', 8080))
+    # Получить порт из Railway
+    railway_port = int(os.environ.get('PORT', 8080))
+    modbus_port = 5020  # Fixed port for Modbus (internal use)
+    
+    logger.info(f"📡 Railway PORT: {railway_port} (for Web UI)")
+    logger.info(f"📡 Modbus PORT: {modbus_port} (for internal Celery)")
     
     # Создать менеджер данных
     data_manager = SensorDataManager()
@@ -659,16 +624,16 @@ def main():
     # Установить data_manager для WebUIHandler
     WebUIHandler.data_manager = data_manager
     
-    # Запустить Modbus сервер
+    # Запустить Modbus сервер на фиксированном порту
     modbus_server = ModbusTCPServer('0.0.0.0', modbus_port, data_manager)
     modbus_thread = threading.Thread(target=modbus_server.start, daemon=True)
     modbus_thread.start()
     
-    # Запустить Web UI сервер
-    web_server = HTTPServer(('0.0.0.0', web_port), WebUIHandler)
-    logger.info(f"✅ Web Dashboard Started")
-    logger.info(f"🌐 Open: http://localhost:{web_port}")
-    logger.info(f"📡 API: http://localhost:{web_port}/api/sensors")
+    # Запустить Web UI сервер на Railway PORT
+    web_server = HTTPServer(('0.0.0.0', railway_port), WebUIHandler)
+    logger.info(f"✅ Web Dashboard Started on Railway PORT")
+    logger.info(f"🌐 Access via Railway public URL")
+    logger.info(f"📡 API endpoints: /api/sensors, /api/status")
     logger.info("=" * 70)
     
     web_thread = threading.Thread(target=web_server.serve_forever, daemon=True)
