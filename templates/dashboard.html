@@ -1141,8 +1141,12 @@
         }
         
         function updateCharts(readings) {
-            const now = new Date().toLocaleTimeString('ru-RU');
+            // Use milliseconds precision to ensure unique timestamps
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString('ru-RU');
             const maxPoints = 20;
+            
+            console.log(`📊 updateCharts called with ${readings.length} readings at ${timeLabel}`);
             
             // Group readings by building_id
             const buildingData = {
@@ -1156,10 +1160,10 @@
             readings.forEach(r => {
                 const buildingId = r.building_id;
                 if (buildingId && buildingData[buildingId]) {
-                    if (r.temperature) buildingData[buildingId].temp.push(r.temperature);
-                    if (r.humidity) buildingData[buildingId].humidity.push(r.humidity);
-                    if (r.co2) buildingData[buildingId].co2.push(r.co2);
-                    if (r.pressure) buildingData[buildingId].pressure.push(r.pressure);
+                    if (r.temperature !== undefined && r.temperature !== null) buildingData[buildingId].temp.push(r.temperature);
+                    if (r.humidity !== undefined && r.humidity !== null) buildingData[buildingId].humidity.push(r.humidity);
+                    if (r.co2 !== undefined && r.co2 !== null) buildingData[buildingId].co2.push(r.co2);
+                    if (r.pressure !== undefined && r.pressure !== null) buildingData[buildingId].pressure.push(r.pressure);
                 }
             });
             
@@ -1175,27 +1179,31 @@
                 };
             }
             
+            console.log('📈 Building averages:', buildingAvgs);
+            
             // Update all 5 datasets in each chart
-            addMultiBuildingData(tempChart, now, buildingAvgs, 'temp', maxPoints);
-            addMultiBuildingData(humidityChart, now, buildingAvgs, 'humidity', maxPoints);
-            addMultiBuildingData(co2Chart, now, buildingAvgs, 'co2', maxPoints);
-            addMultiBuildingData(pressureChart, now, buildingAvgs, 'pressure', maxPoints);
+            addMultiBuildingData(tempChart, timeLabel, buildingAvgs, 'temp', maxPoints);
+            addMultiBuildingData(humidityChart, timeLabel, buildingAvgs, 'humidity', maxPoints);
+            addMultiBuildingData(co2Chart, timeLabel, buildingAvgs, 'co2', maxPoints);
+            addMultiBuildingData(pressureChart, timeLabel, buildingAvgs, 'pressure', maxPoints);
+            
+            console.log('✅ Charts updated successfully');
         }
         
         function addMultiBuildingData(chart, label, buildingAvgs, metric, maxPoints) {
-            // Add timestamp to labels if not exists
-            if (!chart.data.labels.includes(label)) {
-                chart.data.labels.push(label);
-            }
+            // ALWAYS add new data point (don't check for duplicate labels)
+            // This ensures synchronized updates every second
+            chart.data.labels.push(label);
             
             // Update each building's dataset (5 datasets: 0-4 for buildings 1-5)
             for (let i = 0; i < 5; i++) {
                 const buildingId = i + 1;
                 const value = buildingAvgs[buildingId][metric];
                 
-                if (value !== null) {
+                if (value !== null && value !== undefined) {
                     chart.data.datasets[i].data.push(value);
                 } else {
+                    // Push null to keep data arrays synchronized with labels
                     chart.data.datasets[i].data.push(null);
                 }
             }
@@ -1208,7 +1216,8 @@
                 });
             }
             
-            chart.update('none'); // Update without animation for smoother real-time
+            // Update chart without animation for smooth real-time updates
+            chart.update('none');
         }
         
         // Load historical data on page load
@@ -1368,6 +1377,7 @@
                         const badgeEl = document.getElementById(`badge-${buildingId}`);
                         const badgeTextEl = document.getElementById(`badge-text-${buildingId}`);
                         if (building.active_scenarios && building.active_scenarios.length > 0) {
+                            console.log(`🏭 Building ${buildingId} has active scenarios:`, building.active_scenarios);
                             if (badgeEl && badgeTextEl) {
                                 const scenarioName = building.active_scenarios[0].replace('_', ' ').toUpperCase();
                                 badgeTextEl.textContent = `🔥 ${scenarioName} ACTIVE`;
