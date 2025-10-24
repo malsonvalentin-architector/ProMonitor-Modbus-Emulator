@@ -206,6 +206,78 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
+        /* Intensity Slider Styles */
+        .intensity-container {
+            margin: 15px 0;
+        }
+        
+        .intensity-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .intensity-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1rem;
+        }
+        
+        .intensity-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #e0e0e0 0%, #667eea 100%);
+            outline: none;
+            -webkit-appearance: none;
+            margin-bottom: 5px;
+        }
+        
+        .intensity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .intensity-slider::-webkit-slider-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .intensity-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .intensity-slider::-moz-range-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .intensity-range {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
         .scenario-controls {
             display: flex;
             gap: 10px;
@@ -293,6 +365,115 @@
             text-align: center;
         }
         
+        /* Building Cards Styles */
+        .buildings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .building-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .building-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .building-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .building-icon {
+            font-size: 1.5rem;
+        }
+        
+        .building-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #667eea;
+            flex: 1;
+            margin-left: 10px;
+        }
+        
+        .building-status {
+            font-size: 1.2rem;
+        }
+        
+        .status-normal {
+            color: #10b981;
+        }
+        
+        .status-warning {
+            color: #f59e0b;
+        }
+        
+        .status-critical {
+            color: #ef4444;
+        }
+        
+        .building-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .building-metric {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .building-metric .metric-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+            margin-bottom: 0;
+        }
+        
+        .building-metric .metric-text {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .building-sensors {
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .building-scenario-badge {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            animation: badge-pulse 2s infinite;
+        }
+        
+        @keyframes badge-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         .charts-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -364,16 +545,29 @@
                 <div class="scenario-card" id="scenario-temperature_spike">
                     <div class="scenario-icon">🌡️</div>
                     <div class="scenario-name">Скачок Температуры</div>
-                    <div class="scenario-description">Повышение температуры до +35°C</div>
-                    <select class="sensor-select" id="temp-sensor">
-                        <option value="1">Sensor 1 (Building 1)</option>
-                        <option value="13">Sensor 13 (Building 2)</option>
-                        <option value="25">Sensor 25 (Building 3)</option>
-                        <option value="37">Sensor 37 (Building 4)</option>
-                        <option value="45">Sensor 45 (Building 5)</option>
+                    <div class="scenario-description">Повышение температуры во всём здании</div>
+                    <select class="sensor-select" id="temp-building">
+                        <option value="1">🏢 Building 1 (10 sensors)</option>
+                        <option value="2">🏢 Building 2 (10 sensors)</option>
+                        <option value="3">🏢 Building 3 (12 sensors)</option>
+                        <option value="4">🏢 Building 4 (8 sensors)</option>
+                        <option value="5">🏢 Building 5 (12 sensors)</option>
                     </select>
+                    <div class="intensity-container">
+                        <div class="intensity-label">
+                            <span>Интенсивность:</span>
+                            <span class="intensity-value" id="temp-intensity-value">+10°C</span>
+                        </div>
+                        <input type="range" class="intensity-slider" id="temp-intensity" 
+                               min="5" max="20" value="10" step="1"
+                               oninput="document.getElementById('temp-intensity-value').textContent = '+' + this.value + '°C'">
+                        <div class="intensity-range">
+                            <span>+5°C</span>
+                            <span>+20°C</span>
+                        </div>
+                    </div>
                     <div class="scenario-controls">
-                        <button class="btn-trigger" onclick="triggerScenario('temperature_spike', document.getElementById('temp-sensor').value)">Запустить</button>
+                        <button class="btn-trigger" onclick="triggerScenario('temperature_spike')">Запустить</button>
                         <button class="btn-stop" onclick="stopScenario('temperature_spike')" style="display:none;">Стоп</button>
                     </div>
                 </div>
@@ -382,16 +576,29 @@
                 <div class="scenario-card" id="scenario-humidity_drop">
                     <div class="scenario-icon">💧</div>
                     <div class="scenario-name">Падение Влажности</div>
-                    <div class="scenario-description">Снижение влажности до 20%</div>
-                    <select class="sensor-select" id="humid-sensor">
-                        <option value="1">Sensor 1 (Building 1)</option>
-                        <option value="13">Sensor 13 (Building 2)</option>
-                        <option value="25">Sensor 25 (Building 3)</option>
-                        <option value="37">Sensor 37 (Building 4)</option>
-                        <option value="45">Sensor 45 (Building 5)</option>
+                    <div class="scenario-description">Снижение влажности во всём здании</div>
+                    <select class="sensor-select" id="humid-building">
+                        <option value="1">🏢 Building 1 (10 sensors)</option>
+                        <option value="2">🏢 Building 2 (10 sensors)</option>
+                        <option value="3">🏢 Building 3 (12 sensors)</option>
+                        <option value="4">🏢 Building 4 (8 sensors)</option>
+                        <option value="5">🏢 Building 5 (12 sensors)</option>
                     </select>
+                    <div class="intensity-container">
+                        <div class="intensity-label">
+                            <span>Интенсивность:</span>
+                            <span class="intensity-value" id="humid-intensity-value">-15%</span>
+                        </div>
+                        <input type="range" class="intensity-slider" id="humid-intensity" 
+                               min="5" max="30" value="15" step="1"
+                               oninput="document.getElementById('humid-intensity-value').textContent = '-' + this.value + '%'">
+                        <div class="intensity-range">
+                            <span>-5%</span>
+                            <span>-30%</span>
+                        </div>
+                    </div>
                     <div class="scenario-controls">
-                        <button class="btn-trigger" onclick="triggerScenario('humidity_drop', document.getElementById('humid-sensor').value)">Запустить</button>
+                        <button class="btn-trigger" onclick="triggerScenario('humidity_drop')">Запустить</button>
                         <button class="btn-stop" onclick="stopScenario('humidity_drop')" style="display:none;">Стоп</button>
                     </div>
                 </div>
@@ -400,16 +607,29 @@
                 <div class="scenario-card" id="scenario-co2_alarm">
                     <div class="scenario-icon">🌬️</div>
                     <div class="scenario-name">Тревога CO2</div>
-                    <div class="scenario-description">Повышение CO2 до 1200+ ppm</div>
-                    <select class="sensor-select" id="co2-sensor">
-                        <option value="1">Sensor 1 (Building 1)</option>
-                        <option value="13">Sensor 13 (Building 2)</option>
-                        <option value="25">Sensor 25 (Building 3)</option>
-                        <option value="37">Sensor 37 (Building 4)</option>
-                        <option value="45">Sensor 45 (Building 5)</option>
+                    <div class="scenario-description">Повышение CO2 во всём здании</div>
+                    <select class="sensor-select" id="co2-building">
+                        <option value="1">🏢 Building 1 (10 sensors)</option>
+                        <option value="2">🏢 Building 2 (10 sensors)</option>
+                        <option value="3">🏢 Building 3 (12 sensors)</option>
+                        <option value="4">🏢 Building 4 (8 sensors)</option>
+                        <option value="5">🏢 Building 5 (12 sensors)</option>
                     </select>
+                    <div class="intensity-container">
+                        <div class="intensity-label">
+                            <span>Интенсивность:</span>
+                            <span class="intensity-value" id="co2-intensity-value">+400 ppm</span>
+                        </div>
+                        <input type="range" class="intensity-slider" id="co2-intensity" 
+                               min="200" max="800" value="400" step="50"
+                               oninput="document.getElementById('co2-intensity-value').textContent = '+' + this.value + ' ppm'">
+                        <div class="intensity-range">
+                            <span>+200 ppm</span>
+                            <span>+800 ppm</span>
+                        </div>
+                    </div>
                     <div class="scenario-controls">
-                        <button class="btn-trigger" onclick="triggerScenario('co2_alarm', document.getElementById('co2-sensor').value)">Запустить</button>
+                        <button class="btn-trigger" onclick="triggerScenario('co2_alarm')">Запустить</button>
                         <button class="btn-stop" onclick="stopScenario('co2_alarm')" style="display:none;">Стоп</button>
                     </div>
                 </div>
@@ -418,50 +638,152 @@
                 <div class="scenario-card" id="scenario-equipment_failure">
                     <div class="scenario-icon">⚠️</div>
                     <div class="scenario-name">Отказ Оборудования</div>
-                    <div class="scenario-description">Имитирует хаотичные показания датчика</div>
-                    <select class="sensor-select" id="fail-sensor">
-                        <option value="1">Sensor 1 (Building 1)</option>
-                        <option value="13">Sensor 13 (Building 2)</option>
-                        <option value="25">Sensor 25 (Building 3)</option>
-                        <option value="37">Sensor 37 (Building 4)</option>
-                        <option value="45">Sensor 45 (Building 5)</option>
+                    <div class="scenario-description">Хаотичные показания во всём здании</div>
+                    <select class="sensor-select" id="fail-building">
+                        <option value="1">🏢 Building 1 (10 sensors)</option>
+                        <option value="2">🏢 Building 2 (10 sensors)</option>
+                        <option value="3">🏢 Building 3 (12 sensors)</option>
+                        <option value="4">🏢 Building 4 (8 sensors)</option>
+                        <option value="5">🏢 Building 5 (12 sensors)</option>
                     </select>
                     <div class="scenario-controls">
-                        <button class="btn-trigger" onclick="triggerScenario('equipment_failure', document.getElementById('fail-sensor').value)">Запустить</button>
+                        <button class="btn-trigger" onclick="triggerScenario('equipment_failure')">Запустить</button>
                         <button class="btn-stop" onclick="stopScenario('equipment_failure')" style="display:none;">Стоп</button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Metrics Cards -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-icon">🌡️</div>
-                <div class="metric-value" id="avgTemp">--</div>
-                <div class="metric-label">Средняя Температура</div>
-                <div class="metric-average" id="tempRange">--</div>
+        <!-- Building Statistics Cards -->
+        <div class="buildings-grid">
+            <div class="building-card" id="building-1" data-building="1">
+                <div class="building-header">
+                    <span class="building-icon">🏢</span>
+                    <span class="building-title">Building 1</span>
+                    <span class="building-status status-normal" id="status-1">●</span>
+                </div>
+                <div class="building-metrics">
+                    <div class="building-metric">
+                        <span class="metric-icon">🌡️</span>
+                        <span class="metric-text" id="temp-1">--°C</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">💧</span>
+                        <span class="metric-text" id="humidity-1">--%</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">🌬️</span>
+                        <span class="metric-text" id="co2-1">-- ppm</span>
+                    </div>
+                </div>
+                <div class="building-sensors" id="sensors-1">-- sensors</div>
+                <div class="building-scenario-badge" id="badge-1" style="display:none;">
+                    <span id="badge-text-1"></span>
+                </div>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-icon">💧</div>
-                <div class="metric-value" id="avgHumidity">--</div>
-                <div class="metric-label">Средняя Влажность</div>
-                <div class="metric-average" id="humidityRange">--</div>
+
+            <div class="building-card" id="building-2" data-building="2">
+                <div class="building-header">
+                    <span class="building-icon">🏢</span>
+                    <span class="building-title">Building 2</span>
+                    <span class="building-status status-normal" id="status-2">●</span>
+                </div>
+                <div class="building-metrics">
+                    <div class="building-metric">
+                        <span class="metric-icon">🌡️</span>
+                        <span class="metric-text" id="temp-2">--°C</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">💧</span>
+                        <span class="metric-text" id="humidity-2">--%</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">🌬️</span>
+                        <span class="metric-text" id="co2-2">-- ppm</span>
+                    </div>
+                </div>
+                <div class="building-sensors" id="sensors-2">-- sensors</div>
+                <div class="building-scenario-badge" id="badge-2" style="display:none;">
+                    <span id="badge-text-2"></span>
+                </div>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-icon">🌬️</div>
-                <div class="metric-value" id="avgCO2">--</div>
-                <div class="metric-label">Средний CO2</div>
-                <div class="metric-average" id="co2Range">--</div>
+
+            <div class="building-card" id="building-3" data-building="3">
+                <div class="building-header">
+                    <span class="building-icon">🏢</span>
+                    <span class="building-title">Building 3</span>
+                    <span class="building-status status-normal" id="status-3">●</span>
+                </div>
+                <div class="building-metrics">
+                    <div class="building-metric">
+                        <span class="metric-icon">🌡️</span>
+                        <span class="metric-text" id="temp-3">--°C</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">💧</span>
+                        <span class="metric-text" id="humidity-3">--%</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">🌬️</span>
+                        <span class="metric-text" id="co2-3">-- ppm</span>
+                    </div>
+                </div>
+                <div class="building-sensors" id="sensors-3">-- sensors</div>
+                <div class="building-scenario-badge" id="badge-3" style="display:none;">
+                    <span id="badge-text-3"></span>
+                </div>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-icon">🌍</div>
-                <div class="metric-value" id="avgPressure">--</div>
-                <div class="metric-label">Среднее Давление</div>
-                <div class="metric-average" id="pressureRange">--</div>
+
+            <div class="building-card" id="building-4" data-building="4">
+                <div class="building-header">
+                    <span class="building-icon">🏢</span>
+                    <span class="building-title">Building 4</span>
+                    <span class="building-status status-normal" id="status-4">●</span>
+                </div>
+                <div class="building-metrics">
+                    <div class="building-metric">
+                        <span class="metric-icon">🌡️</span>
+                        <span class="metric-text" id="temp-4">--°C</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">💧</span>
+                        <span class="metric-text" id="humidity-4">--%</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">🌬️</span>
+                        <span class="metric-text" id="co2-4">-- ppm</span>
+                    </div>
+                </div>
+                <div class="building-sensors" id="sensors-4">-- sensors</div>
+                <div class="building-scenario-badge" id="badge-4" style="display:none;">
+                    <span id="badge-text-4"></span>
+                </div>
+            </div>
+
+            <div class="building-card" id="building-5" data-building="5">
+                <div class="building-header">
+                    <span class="building-icon">🏢</span>
+                    <span class="building-title">Building 5</span>
+                    <span class="building-status status-normal" id="status-5">●</span>
+                </div>
+                <div class="building-metrics">
+                    <div class="building-metric">
+                        <span class="metric-icon">🌡️</span>
+                        <span class="metric-text" id="temp-5">--°C</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">💧</span>
+                        <span class="metric-text" id="humidity-5">--%</span>
+                    </div>
+                    <div class="building-metric">
+                        <span class="metric-icon">🌬️</span>
+                        <span class="metric-text" id="co2-5">-- ppm</span>
+                    </div>
+                </div>
+                <div class="building-sensors" id="sensors-5">-- sensors</div>
+                <div class="building-scenario-badge" id="badge-5" style="display:none;">
+                    <span id="badge-text-5"></span>
+                </div>
             </div>
         </div>
         
@@ -645,7 +967,10 @@
             console.log('📡 Received sensor update:', data);
             
             if (data.readings && data.readings.length > 0) {
-                updateMetrics(data.readings);
+                // Refresh building stats on each update
+                loadBuildingStats();
+                
+                // Update charts
                 updateCharts(data.readings);
             }
         });
@@ -783,7 +1108,8 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.data) {
-                    updateMetrics(data.data);
+                    // Building stats loaded separately via loadBuildingStats()
+                    console.log('✅ Initial sensor data loaded');
                 }
             })
             .catch(err => console.error('❌ Failed to fetch initial data:', err));
@@ -822,6 +1148,66 @@
             }
         });
         
+        // Load building statistics
+        async function loadBuildingStats() {
+            try {
+                const response = await fetch('/api/buildings/stats');
+                const result = await response.json();
+                
+                if (result.success && result.buildings) {
+                    result.buildings.forEach(building => {
+                        const buildingId = building.building_id;
+                        
+                        // Update temperature
+                        const tempEl = document.getElementById(`temp-${buildingId}`);
+                        if (tempEl) tempEl.textContent = building.avg_temperature + '°C';
+                        
+                        // Update humidity
+                        const humidityEl = document.getElementById(`humidity-${buildingId}`);
+                        if (humidityEl) humidityEl.textContent = building.avg_humidity + '%';
+                        
+                        // Update CO2
+                        const co2El = document.getElementById(`co2-${buildingId}`);
+                        if (co2El) co2El.textContent = building.avg_co2 + ' ppm';
+                        
+                        // Update sensor count
+                        const sensorsEl = document.getElementById(`sensors-${buildingId}`);
+                        if (sensorsEl) sensorsEl.textContent = building.sensor_count + ' sensors';
+                        
+                        // Update status indicator
+                        const statusEl = document.getElementById(`status-${buildingId}`);
+                        if (statusEl) {
+                            statusEl.className = 'building-status';
+                            if (building.status === 'normal') {
+                                statusEl.classList.add('status-normal');
+                            } else if (building.status === 'warning') {
+                                statusEl.classList.add('status-warning');
+                            } else if (building.status === 'critical') {
+                                statusEl.classList.add('status-critical');
+                            }
+                        }
+                        
+                        // Show/hide scenario badge
+                        const badgeEl = document.getElementById(`badge-${buildingId}`);
+                        const badgeTextEl = document.getElementById(`badge-text-${buildingId}`);
+                        if (building.active_scenarios && building.active_scenarios.length > 0) {
+                            if (badgeEl && badgeTextEl) {
+                                const scenarioName = building.active_scenarios[0].replace('_', ' ').toUpperCase();
+                                badgeTextEl.textContent = `🔥 ${scenarioName} ACTIVE`;
+                                badgeEl.style.display = 'block';
+                            }
+                        } else {
+                            if (badgeEl) badgeEl.style.display = 'none';
+                        }
+                    });
+                    
+                    console.log('🏢 Building stats updated');
+                }
+            } catch (err) {
+                console.error('❌ Failed to load building stats:', err);
+            }
+        }
+        
         // Check active scenarios on page load
         async function checkActiveScenarios() {
             try {
@@ -845,24 +1231,54 @@
             }
         }
         
-        // Check on page load
+        // Load initial data on page load
+        loadBuildingStats();
         checkActiveScenarios();
         
-        async function triggerScenario(type, sensorId) {
-            console.log(`🎬 Triggering scenario: ${type}, sensor: ${sensorId}`);
+        // Refresh building stats every 2 seconds
+        setInterval(loadBuildingStats, 2000);
+        
+        async function triggerScenario(type) {
+            // Get building_id and intensity based on scenario type
+            let buildingId, intensity;
+            
+            if (type === 'temperature_spike') {
+                buildingId = parseInt(document.getElementById('temp-building').value);
+                intensity = parseInt(document.getElementById('temp-intensity').value);
+            } else if (type === 'humidity_drop') {
+                buildingId = parseInt(document.getElementById('humid-building').value);
+                intensity = parseInt(document.getElementById('humid-intensity').value);
+            } else if (type === 'co2_alarm') {
+                buildingId = parseInt(document.getElementById('co2-building').value);
+                intensity = parseInt(document.getElementById('co2-intensity').value);
+            } else if (type === 'equipment_failure') {
+                buildingId = parseInt(document.getElementById('fail-building').value);
+                intensity = 0;
+            }
+            
+            console.log(`🎬 Triggering scenario: ${type}, building: ${buildingId}, intensity: ${intensity}`);
+            
             try {
                 const response = await fetch('/api/scenarios/trigger', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({type, sensor_id: parseInt(sensorId), duration: 60})
+                    body: JSON.stringify({
+                        type: type,
+                        building_id: buildingId,
+                        intensity: intensity,
+                        duration: 300
+                    })
                 });
                 const result = await response.json();
-                console.log('Response:', result);
-                if (!result.success) {
+                console.log('✅ Scenario triggered:', result);
+                
+                if (result.success) {
+                    console.log(`🏢 Affected ${result.sensor_count} sensors in Building ${buildingId}`);
+                } else {
                     alert('Ошибка: ' + result.error);
                 }
             } catch (err) {
-                console.error('Error triggering scenario:', err);
+                console.error('❌ Error triggering scenario:', err);
                 alert('Ошибка при запуске сценария: ' + err.message);
             }
         }
