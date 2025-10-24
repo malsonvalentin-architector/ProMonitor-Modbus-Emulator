@@ -1145,6 +1145,11 @@
         }
         
         function updateCharts(readings) {
+            // Skip if paused
+            if (isPaused) {
+                return;
+            }
+            
             // Use milliseconds precision to ensure unique timestamps
             const now = new Date();
             const timeLabel = now.toLocaleTimeString('ru-RU');
@@ -1354,6 +1359,11 @@
         
         // Load building statistics
         async function loadBuildingStats() {
+            // Skip if paused
+            if (isPaused) {
+                return;
+            }
+            
             try {
                 const response = await fetch('/api/buildings/stats');
                 const result = await response.json();
