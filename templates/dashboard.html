@@ -854,8 +854,11 @@
         
         socket.on('disconnect', () => {
             console.log('❌ Disconnected from server');
-            document.getElementById('connectionStatus').className = 'connection-status disconnected';
-            document.getElementById('statusText').textContent = 'Отключено';
+            // Don't change status if manually paused
+            if (!isPaused) {
+                document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                document.getElementById('statusText').textContent = 'Отключено';
+            }
         });
         
         // Pause/Resume toggle
