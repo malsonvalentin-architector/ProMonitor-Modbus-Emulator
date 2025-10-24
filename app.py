@@ -5,11 +5,12 @@ ProMonitor Real-Time Dashboard v2.0
 Flask + SocketIO + PostgreSQL backend
 """
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 import psycopg2
 import os
 import time
+import random
 from datetime import datetime, timedelta
 import threading
 import subprocess
@@ -475,8 +476,125 @@ def version():
     """Show current deployment version"""
     import datetime
     return jsonify({
-        'version': '2.0.1-autocommit-fix',
+        'version': '2.0.2-interactive-emulator',
         'timestamp': datetime.datetime.now().isoformat(),
         'has_autocommit': 'autocommit=True' in open(__file__).read(),
         'endpoints': [str(rule) for rule in app.url_map.iter_rules() if not rule.rule.startswith('/static')]
     })
+
+# ============================================================
+# SCENARIO CONTROL ENDPOINTS
+# ============================================================
+
+# Global scenario state (shared with data_generator if integrated)
+SCENARIO_STATE = {
+    'temperature_spike': {'active': False, 'sensor_id': None},
+    'humidity_drop': {'active': False, 'sensor_id': None},
+    'co2_alarm': {'active': False, 'sensor_id': None},
+    'equipment_failure': {'active': False, 'sensor_id': None}
+}
+
+@app.route('/api/scenarios/status')
+def get_scenarios_status():
+    """Get current status of all scenarios"""
+    return jsonify({
+        'success': True,
+        'scenarios': SCENARIO_STATE
+    })
+
+@app.route('/api/scenarios/trigger', methods=['POST'])
+def trigger_scenario():
+    """Trigger a specific scenario"""
+    try:
+        from flask import request
+        data = request.get_json()
+        
+        scenario_type = data.get('type')
+        sensor_id = data.get('sensor_id', 1)
+        duration = data.get('duration', 60)  # seconds
+        
+        if scenario_type not in SCENARIO_STATE:
+            return jsonify({'success': False, 'error': 'Invalid scenario type'})
+        
+        # Activate scenario
+        SCENARIO_STATE[scenario_type] = {
+            'active': True,
+            'sensor_id': sensor_id,
+            'started_at': datetime.now().isoformat(),
+            'duration': duration
+        }
+        
+        # Apply immediate effect by inserting anomalous reading
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get sensor's building and controller
+        cursor.execute(
+            "SELECT building_id, controller_id FROM sensor_readings WHERE sensor_id = %s ORDER BY timestamp DESC LIMIT 1",
+            (sensor_id,)
+        )
+        result = cursor.fetchone()
+        
+        if result:
+            building_id, controller_id = result
+            
+            # Generate anomalous reading
+            temp = 20 + (15 if scenario_type == 'temperature_spike' else 0)
+            humidity = 50 + (-20 if scenario_type == 'humidity_drop' else 0)
+            co2 = 450 + (800 if scenario_type == 'co2_alarm' else 0)
+            pressure = 1010 + (random.uniform(-20, 20) if scenario_type == 'equipment_failure' else 0)
+            
+            cursor.execute("""
+                INSERT INTO sensor_readings 
+                (sensor_id, timestamp, temperature, humidity, co2, pressure, building_id, controller_id)
+                VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s)
+            """, (sensor_id, temp, humidity, co2, pressure, building_id, controller_id))
+        
+        cursor.close()
+        conn.close()
+        
+        # Broadcast update via WebSocket
+        socketio.emit('scenario_triggered', {
+            'type': scenario_type,
+            'sensor_id': sensor_id,
+            'message': f'Scenario {scenario_type} activated for sensor {sensor_id}'
+        })
+        
+        return jsonify({
+            'success': True,
+            'message': f'Scenario {scenario_type} triggered for sensor {sensor_id}',
+            'scenario': SCENARIO_STATE[scenario_type]
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/scenarios/stop', methods=['POST'])
+def stop_scenario():
+    """Stop a specific scenario"""
+    try:
+        from flask import request
+        data = request.get_json()
+        
+        scenario_type = data.get('type')
+        
+        if scenario_type == 'all':
+            for key in SCENARIO_STATE:
+                SCENARIO_STATE[key] = {'active': False, 'sensor_id': None}
+            message = 'All scenarios stopped'
+        elif scenario_type in SCENARIO_STATE:
+            SCENARIO_STATE[scenario_type] = {'active': False, 'sensor_id': None}
+            message = f'Scenario {scenario_type} stopped'
+        else:
+            return jsonify({'success': False, 'error': 'Invalid scenario type'})
+        
+        socketio.emit('scenario_stopped', {'type': scenario_type})
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'scenarios': SCENARIO_STATE
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
