@@ -10,14 +10,24 @@ import time
 import random
 from datetime import datetime
 
-# Global scenario state
+# Global scenario state (will be synced from app.py)
 ACTIVE_SCENARIOS = {
-    'temperature_spike': False,
-    'humidity_drop': False,
-    'co2_alarm': False,
-    'equipment_failure': False,
-    'affected_sensor': None
+    'temperature_spike': {'active': False, 'building_id': None, 'intensity': 10},
+    'humidity_drop': {'active': False, 'building_id': None, 'intensity': 15},
+    'co2_alarm': {'active': False, 'building_id': None, 'intensity': 400},
+    'equipment_failure': {'active': False, 'building_id': None, 'failed_sensors': []}
 }
+
+def sync_scenarios_from_app():
+    """Sync scenarios from app.py SCENARIO_STATE if available"""
+    try:
+        import sys
+        if 'app' in sys.modules:
+            from app import SCENARIO_STATE
+            global ACTIVE_SCENARIOS
+            ACTIVE_SCENARIOS = SCENARIO_STATE
+    except:
+        pass
 
 def get_db_config():
     """Get database configuration from environment variables"""
@@ -47,6 +57,9 @@ def get_db_connection():
 def generate_sensor_reading(sensor_id, building_id, controller_id):
     """Generate realistic sensor reading with scenario effects"""
     
+    # Sync scenarios from app.py
+    sync_scenarios_from_app()
+    
     # Base values for each building
     base_temps = {1: 20, 2: 21, 3: 23, 4: 25, 5: 26}
     base_humidity = {1: 47, 2: 49, 3: 51, 4: 53, 5: 55}
@@ -57,17 +70,24 @@ def generate_sensor_reading(sensor_id, building_id, controller_id):
     co2 = random.uniform(400, 600)
     pressure = random.uniform(990, 1020)
     
-    # Apply active scenarios
-    if ACTIVE_SCENARIOS.get('temperature_spike') and ACTIVE_SCENARIOS.get('affected_sensor') == sensor_id:
-        temperature += random.uniform(8, 12)  # Spike +8-12°C
+    # Apply active scenarios (building-level)
+    temp_scenario = ACTIVE_SCENARIOS.get('temperature_spike', {})
+    if temp_scenario.get('active') and temp_scenario.get('building_id') == building_id:
+        intensity = temp_scenario.get('intensity', 10)
+        temperature += intensity  # Apply intensity
     
-    if ACTIVE_SCENARIOS.get('humidity_drop') and ACTIVE_SCENARIOS.get('affected_sensor') == sensor_id:
-        humidity -= random.uniform(15, 25)  # Drop 15-25%
+    humidity_scenario = ACTIVE_SCENARIOS.get('humidity_drop', {})
+    if humidity_scenario.get('active') and humidity_scenario.get('building_id') == building_id:
+        intensity = humidity_scenario.get('intensity', 15)
+        humidity -= intensity  # Apply intensity
     
-    if ACTIVE_SCENARIOS.get('co2_alarm') and ACTIVE_SCENARIOS.get('affected_sensor') == sensor_id:
-        co2 += random.uniform(600, 800)  # CO2 spike (1000-1400 ppm)
+    co2_scenario = ACTIVE_SCENARIOS.get('co2_alarm', {})
+    if co2_scenario.get('active') and co2_scenario.get('building_id') == building_id:
+        intensity = co2_scenario.get('intensity', 400)
+        co2 += intensity  # Apply intensity
     
-    if ACTIVE_SCENARIOS.get('equipment_failure') and ACTIVE_SCENARIOS.get('affected_sensor') == sensor_id:
+    failure_scenario = ACTIVE_SCENARIOS.get('equipment_failure', {})
+    if failure_scenario.get('active') and failure_scenario.get('building_id') == building_id:
         # Equipment failure: erratic readings
         temperature += random.uniform(-10, 10)
         humidity = random.uniform(0, 100)

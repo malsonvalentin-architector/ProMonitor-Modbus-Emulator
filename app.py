@@ -447,7 +447,7 @@ def broadcast_data():
             print(f"❌ Broadcast error: {e}")
         
         # Wait 10 seconds before next broadcast
-        time.sleep(10)
+        time.sleep(1)
 
 # Import data generator functions
 try:
@@ -485,11 +485,11 @@ def continuous_data_generation():
             if iteration % 10 == 0:
                 cleanup_old_data()
             
-            time.sleep(10)
+            time.sleep(1)
             
         except Exception as e:
             print(f"❌ Data generation error: {e}")
-            time.sleep(10)
+            time.sleep(1)
 
 # Start background threads
 broadcast_thread = threading.Thread(target=broadcast_data, daemon=True)
@@ -521,10 +521,10 @@ def version():
 
 # Global scenario state (shared with data_generator if integrated)
 SCENARIO_STATE = {
-    'temperature_spike': {'active': False, 'sensor_id': None},
-    'humidity_drop': {'active': False, 'sensor_id': None},
-    'co2_alarm': {'active': False, 'sensor_id': None},
-    'equipment_failure': {'active': False, 'sensor_id': None}
+    'temperature_spike': {'active': False, 'building_id': None, 'intensity': 10},
+    'humidity_drop': {'active': False, 'building_id': None, 'intensity': 15},
+    'co2_alarm': {'active': False, 'building_id': None, 'intensity': 400},
+    'equipment_failure': {'active': False, 'building_id': None, 'failed_sensors': []}
 }
 
 @app.route('/api/scenarios/status')
@@ -537,51 +537,52 @@ def get_scenarios_status():
 
 @app.route('/api/scenarios/trigger', methods=['POST'])
 def trigger_scenario():
-    """Trigger a specific scenario"""
+    """Trigger a specific scenario for entire building"""
     try:
         from flask import request
         data = request.get_json()
         
         scenario_type = data.get('type')
-        sensor_id = data.get('sensor_id', 1)
-        duration = data.get('duration', 60)  # seconds
+        building_id = data.get('building_id', 1)
+        intensity = data.get('intensity')
+        duration = data.get('duration', 300)  # 5 minutes default
         
         if scenario_type not in SCENARIO_STATE:
             return jsonify({'success': False, 'error': 'Invalid scenario type'})
         
-        # Activate scenario
-        SCENARIO_STATE[scenario_type] = {
-            'active': True,
-            'sensor_id': sensor_id,
-            'started_at': datetime.now().isoformat(),
-            'duration': duration
-        }
+        # Set default intensity if not provided
+        if intensity is None:
+            if scenario_type == 'temperature_spike':
+                intensity = 10
+            elif scenario_type == 'humidity_drop':
+                intensity = 15
+            elif scenario_type == 'co2_alarm':
+                intensity = 400
+            else:
+                intensity = 0
         
-        # Apply immediate effect by inserting anomalous reading
+        # Get all sensors in this building
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get sensor's building and controller
-        cursor.execute(
-            "SELECT building_id, controller_id FROM sensor_readings WHERE sensor_id = %s ORDER BY timestamp DESC LIMIT 1",
-            (sensor_id,)
-        )
-        result = cursor.fetchone()
+        cursor.execute("""
+            SELECT DISTINCT sensor_id 
+            FROM sensor_readings 
+            WHERE building_id = %s
+            ORDER BY sensor_id
+        """, (building_id,))
         
-        if result:
-            building_id, controller_id = result
-            
-            # Generate anomalous reading
-            temp = 20 + (15 if scenario_type == 'temperature_spike' else 0)
-            humidity = 50 + (-20 if scenario_type == 'humidity_drop' else 0)
-            co2 = 450 + (800 if scenario_type == 'co2_alarm' else 0)
-            pressure = 1010 + (random.uniform(-20, 20) if scenario_type == 'equipment_failure' else 0)
-            
-            cursor.execute("""
-                INSERT INTO sensor_readings 
-                (sensor_id, timestamp, temperature, humidity, co2, pressure, building_id, controller_id)
-                VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s)
-            """, (sensor_id, temp, humidity, co2, pressure, building_id, controller_id))
+        affected_sensors = [row[0] for row in cursor.fetchall()]
+        
+        # Activate scenario
+        SCENARIO_STATE[scenario_type] = {
+            'active': True,
+            'building_id': building_id,
+            'intensity': intensity,
+            'started_at': datetime.now().isoformat(),
+            'duration': duration,
+            'affected_sensors': affected_sensors
+        }
         
         cursor.close()
         conn.close()
@@ -589,13 +590,19 @@ def trigger_scenario():
         # Broadcast update via WebSocket
         socketio.emit('scenario_triggered', {
             'type': scenario_type,
-            'sensor_id': sensor_id,
-            'message': f'Scenario {scenario_type} activated for sensor {sensor_id}'
+            'building_id': building_id,
+            'intensity': intensity,
+            'affected_sensors': affected_sensors,
+            'message': f'Scenario {scenario_type} activated for Building {building_id} ({len(affected_sensors)} sensors)'
         })
         
         return jsonify({
             'success': True,
-            'message': f'Scenario {scenario_type} triggered for sensor {sensor_id}',
+            'message': f'Scenario {scenario_type} triggered for Building {building_id}',
+            'building_id': building_id,
+            'intensity': intensity,
+            'affected_sensors': affected_sensors,
+            'sensor_count': len(affected_sensors),
             'scenario': SCENARIO_STATE[scenario_type]
         })
         
@@ -613,10 +620,12 @@ def stop_scenario():
         
         if scenario_type == 'all':
             for key in SCENARIO_STATE:
-                SCENARIO_STATE[key] = {'active': False, 'sensor_id': None}
+                SCENARIO_STATE[key]['active'] = False
+                SCENARIO_STATE[key]['building_id'] = None
             message = 'All scenarios stopped'
         elif scenario_type in SCENARIO_STATE:
-            SCENARIO_STATE[scenario_type] = {'active': False, 'sensor_id': None}
+            SCENARIO_STATE[scenario_type]['active'] = False
+            SCENARIO_STATE[scenario_type]['building_id'] = None
             message = f'Scenario {scenario_type} stopped'
         else:
             return jsonify({'success': False, 'error': 'Invalid scenario type'})
@@ -631,6 +640,88 @@ def stop_scenario():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/buildings/stats')
+def get_buildings_stats():
+    """Get statistics for each building"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Query to get latest stats per building
+        query = """
+            SELECT 
+                building_id,
+                COUNT(DISTINCT sensor_id) as sensor_count,
+                AVG(temperature) as avg_temp,
+                AVG(humidity) as avg_humidity,
+                AVG(co2) as avg_co2,
+                AVG(pressure) as avg_pressure,
+                MIN(temperature) as min_temp,
+                MAX(temperature) as max_temp
+            FROM (
+                SELECT DISTINCT ON (sensor_id)
+                    sensor_id,
+                    building_id,
+                    temperature,
+                    humidity,
+                    co2,
+                    pressure
+                FROM sensor_readings
+                WHERE timestamp > NOW() - INTERVAL '5 minutes'
+                ORDER BY sensor_id, timestamp DESC
+            ) latest
+            GROUP BY building_id
+            ORDER BY building_id
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        buildings = []
+        for row in results:
+            building_id = row[0]
+            avg_temp = float(row[2]) if row[2] else 0
+            
+            # Determine status based on temperature
+            if avg_temp < 18 or avg_temp > 27:
+                status = 'critical'
+            elif avg_temp < 20 or avg_temp > 24:
+                status = 'warning'
+            else:
+                status = 'normal'
+            
+            # Check active scenarios for this building
+            active_scenarios = []
+            for scenario_type, scenario_data in SCENARIO_STATE.items():
+                if scenario_data.get('active') and scenario_data.get('building_id') == building_id:
+                    active_scenarios.append(scenario_type)
+            
+            buildings.append({
+                'building_id': building_id,
+                'sensor_count': row[1],
+                'avg_temperature': round(avg_temp, 1),
+                'avg_humidity': round(float(row[3]), 1) if row[3] else 0,
+                'avg_co2': round(float(row[4]), 1) if row[4] else 0,
+                'avg_pressure': round(float(row[5]), 1) if row[5] else 0,
+                'min_temp': round(float(row[6]), 1) if row[6] else 0,
+                'max_temp': round(float(row[7]), 1) if row[7] else 0,
+                'status': status,
+                'active_scenarios': active_scenarios
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'buildings': buildings,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     
