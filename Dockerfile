@@ -2,18 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копируем файлы
-COPY app.py .
+# Copy application files
 COPY requirements.txt .
+COPY app.py .
+COPY setup_database.py .
+COPY templates/ ./templates/
 
-# Устанавливаем зависимости (минимальные)
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Открываем порты
-# PORT - для Modbus TCP (Railway динамический)
-# 8080 - для Web Dashboard
-EXPOSE $PORT
+# Expose port (Railway provides PORT env variable)
 EXPOSE 8080
 
-# Запускаем эмулятор с веб-интерфейсом
-CMD ["python", "app.py"]
+# Run application
+CMD ["python3", "app.py"]
