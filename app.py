@@ -448,10 +448,56 @@ def broadcast_data():
         # Wait 10 seconds before next broadcast
         time.sleep(10)
 
-# Start background broadcast thread
+# Import data generator functions
+try:
+    from data_generator import generate_all_sensors, insert_readings, cleanup_old_data
+    DATA_GENERATOR_AVAILABLE = True
+    print("✅ Data generator module loaded")
+except ImportError:
+    DATA_GENERATOR_AVAILABLE = False
+    print("⚠️  Data generator module not found")
+
+# Background data generation thread
+def continuous_data_generation():
+    """Generate sensor data every 10 seconds"""
+    if not DATA_GENERATOR_AVAILABLE:
+        print("❌ Data generator not available")
+        return
+    
+    print("🔴 Continuous data generation started")
+    iteration = 0
+    
+    while True:
+        try:
+            iteration += 1
+            
+            # Generate readings
+            readings = generate_all_sensors()
+            
+            # Insert into database
+            success = insert_readings(readings)
+            
+            if success:
+                print(f"✅ [{datetime.now().strftime('%H:%M:%S')}] Generated {len(readings)} readings (iteration #{iteration})")
+            
+            # Cleanup every 10 iterations
+            if iteration % 10 == 0:
+                cleanup_old_data()
+            
+            time.sleep(10)
+            
+        except Exception as e:
+            print(f"❌ Data generation error: {e}")
+            time.sleep(10)
+
+# Start background threads
 broadcast_thread = threading.Thread(target=broadcast_data, daemon=True)
 broadcast_thread.start()
 print("🚀 Background broadcast started")
+
+data_gen_thread = threading.Thread(target=continuous_data_generation, daemon=True)
+data_gen_thread.start()
+print("🚀 Background data generator started")
 
 # ============================================================
 # MAIN
