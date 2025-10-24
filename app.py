@@ -329,6 +329,55 @@ def run_setup():
             'error': str(e)
         })
 
+@app.route('/api/test-db')
+def test_db():
+    """Comprehensive database diagnostic"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get total count
+        cursor.execute("SELECT COUNT(*) FROM sensor_readings")
+        total = cursor.fetchone()[0]
+        
+        # Get timestamp range and server time
+        cursor.execute("SELECT MIN(timestamp), MAX(timestamp), NOW() FROM sensor_readings")
+        min_ts, max_ts, now_ts = cursor.fetchone()
+        
+        # Check recent data (24 hours)
+        cursor.execute("SELECT COUNT(*) FROM sensor_readings WHERE timestamp >= NOW() - INTERVAL '24 hours'")
+        recent_24h = cursor.fetchone()[0]
+        
+        # Check very recent (5 minutes)
+        cursor.execute("SELECT COUNT(*) FROM sensor_readings WHERE timestamp >= NOW() - INTERVAL '5 minutes'")
+        recent_5m = cursor.fetchone()[0]
+        
+        # Sample data
+        cursor.execute("SELECT sensor_id, timestamp, temperature, humidity FROM sensor_readings ORDER BY timestamp DESC LIMIT 5")
+        samples = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'total_readings': total,
+            'oldest_timestamp': str(min_ts) if min_ts else None,
+            'newest_timestamp': str(max_ts) if max_ts else None,
+            'server_time': str(now_ts),
+            'age_minutes': (now_ts - max_ts).total_seconds() / 60 if max_ts else None,
+            'readings_last_24h': recent_24h,
+            'readings_last_5m': recent_5m,
+            'samples': [{
+                'sensor_id': s[0],
+                'timestamp': str(s[1]),
+                'temperature': float(s[2]),
+                'humidity': float(s[3])
+            } for s in samples]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 # ============================================================
 # WEBSOCKET HANDLERS
 # ============================================================
