@@ -470,3 +470,21 @@ if __name__ == '__main__':
     
     # Run with eventlet for WebSocket support
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
+
+@app.route('/api/test-query')
+def test_query():
+    """Run direct SQL query test"""
+    try:
+        result = subprocess.run(
+            ['python3', 'test_query_exec.py'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return jsonify({
+            'success': result.returncode == 0,
+            'output': result.stdout,
+            'error': result.stderr
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
