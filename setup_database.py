@@ -91,8 +91,9 @@ def main():
         {'id': 5, 'controllers': 2, 'temp_base': 26}
     ]
     
-    # Generate readings for last 5 minutes only (current time window)
-    now = datetime.now()
+    # Generate readings for last 5 minutes using PostgreSQL NOW()
+    cursor.execute("SELECT NOW()")
+    now = cursor.fetchone()[0]
     start_time = now - timedelta(minutes=5)  # Last 5 minutes
     
     # Generate 1 reading per sensor every 30 seconds = 10 readings per sensor
