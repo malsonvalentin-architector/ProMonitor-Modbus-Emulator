@@ -17,8 +17,9 @@ import subprocess
 import sys
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+app.config['SECRET_KEY'] = 'promonitor-v2-interactive-emulator-2024'
+app.config['DEBUG'] = False
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=False)
 
 # Database connection configuration
 def get_db_config():
@@ -503,20 +504,6 @@ print("🚀 Background data generator started")
 # MAIN
 # ============================================================
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    
-    print("\n" + "="*60)
-    print("🚀 ProMonitor Real-Time Dashboard v2.0")
-    print("="*60)
-    print(f"🌐 Dashboard URL: http://localhost:{port}")
-    print(f"📡 WebSocket: ws://localhost:{port}/socket.io/")
-    print(f"📊 API Docs: http://localhost:{port}/api/readings/latest")
-    print("="*60 + "\n")
-    
-    # Run with eventlet for WebSocket support
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
-
 @app.route('/api/version')
 def version():
     """Show current deployment version"""
@@ -644,3 +631,16 @@ def stop_scenario():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8080))
+    
+    print("\n" + "="*60)
+    print("🚀 ProMonitor Real-Time Dashboard v2.0")
+    print("="*60)
+    print(f"🌐 Dashboard URL: http://localhost:{port}")
+    print(f"📡 WebSocket: ws://localhost:{port}/socket.io/")
+    print(f"📊 API Docs: http://localhost:{port}/api/readings/latest")
+    print("="*60 + "\n")
+    
+    # Run with eventlet for WebSocket support
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
