@@ -399,6 +399,18 @@ def handle_disconnect():
     """Handle client disconnection"""
     print('🔌 Client disconnected')
 
+@socketio.on('request_test_update')
+def handle_test_request():
+    """🧪 TEST: Manual emission to verify WebSocket works"""
+    print('🧪 Received test request - sending test emission')
+    test_data = {
+        'readings': [
+            {'sensor_id': 'TEST', 'temperature': 99.9, 'humidity': 99.9, 'co2': 999, 'pressure': 9.99, 'building_id': 1}
+        ]
+    }
+    emit('sensor_update', test_data, broadcast=True)
+    print('✅ Test emission sent')
+
 def broadcast_data():
     """Background thread to broadcast real-time data"""
     print("🔴 Real-time broadcast thread started")

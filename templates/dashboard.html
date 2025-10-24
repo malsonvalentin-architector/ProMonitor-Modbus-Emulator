@@ -845,10 +845,18 @@
         // Connection status handling
         socket.on('connect', () => {
             console.log('✅ Connected to server');
+            console.log('🔍 Socket ID:', socket.id);
+            console.log('🔍 Socket connected:', socket.connected);
+            console.log('🔍 Transport:', socket.io.engine.transport.name);
+            
             if (!isPaused) {
                 document.getElementById('connectionStatus').className = 'connection-status connected';
                 document.getElementById('statusText').textContent = 'Подключено';
             }
+            
+            // 🚨 CRITICAL TEST: Manually request a test emission
+            console.log('🧪 Requesting test emission from server...');
+            socket.emit('request_test_update');
         });
         
         socket.on('disconnect', () => {
