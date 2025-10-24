@@ -83,7 +83,7 @@ def get_latest_readings():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get latest reading for each sensor (within last 24 hours)
+        # Get latest reading for each sensor (NO TIME FILTER - DEBUG)
         query = """
             SELECT DISTINCT ON (sensor_id) 
                 sensor_id,
@@ -95,7 +95,6 @@ def get_latest_readings():
                 building_id,
                 controller_id
             FROM sensor_readings
-            WHERE timestamp >= NOW() - INTERVAL '24 hours'
             ORDER BY sensor_id, timestamp DESC
         """
         
@@ -414,7 +413,6 @@ def broadcast_data():
                     building_id,
                     controller_id
                 FROM sensor_readings
-                WHERE timestamp >= NOW() - INTERVAL '24 hours'
                 ORDER BY sensor_id, timestamp DESC
             """
             
