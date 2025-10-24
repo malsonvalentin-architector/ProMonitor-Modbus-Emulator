@@ -83,9 +83,9 @@ def get_latest_readings():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get latest reading for each sensor (NO TIME FILTER - DEBUG)
+        # SIMPLE QUERY - Get ANY 50 readings (DEBUG)
         query = """
-            SELECT DISTINCT ON (sensor_id) 
+            SELECT 
                 sensor_id,
                 timestamp,
                 temperature,
@@ -95,7 +95,8 @@ def get_latest_readings():
                 building_id,
                 controller_id
             FROM sensor_readings
-            ORDER BY sensor_id, timestamp DESC
+            ORDER BY timestamp DESC
+            LIMIT 50
         """
         
         cursor.execute(query)
