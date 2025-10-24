@@ -1363,6 +1363,19 @@
                 const result = await response.json();
                 
                 if (result.success && result.buildings) {
+                    // 🔥 WORKAROUND: Since WebSocket broadcast has issues, 
+                    // we'll also fetch latest readings here and update charts
+                    try {
+                        const readingsResp = await fetch('/api/readings/latest');
+                        const readingsData = await readingsResp.json();
+                        if (readingsData.success && readingsData.data && readingsData.data.length > 0) {
+                            console.log(`🔄 [WORKAROUND] Got ${readingsData.data.length} readings from API`);
+                            updateCharts(readingsData.data);
+                        }
+                    } catch (err) {
+                        console.error('⚠️  Failed to fetch readings for charts:', err);
+                    }
+                    
                     result.buildings.forEach(building => {
                         const buildingId = building.building_id;
                         
