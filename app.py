@@ -300,6 +300,15 @@ def debug_db():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/diagnostic')
+def diagnostic():
+    """Run diagnostic script"""
+    try:
+        result = subprocess.run(['python3', 'diagnostic.py'], capture_output=True, text=True, timeout=10)
+        return jsonify({'success': result.returncode == 0, 'output': result.stdout, 'error': result.stderr})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/run-setup', methods=['POST'])
 def run_setup():
     """Run database setup script"""
