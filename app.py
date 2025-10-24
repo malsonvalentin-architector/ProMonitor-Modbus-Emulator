@@ -83,7 +83,7 @@ def get_latest_readings():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get latest reading for each sensor (within last 5 minutes)
+        # Get latest reading for each sensor (within last 24 hours)
         query = """
             SELECT DISTINCT ON (sensor_id) 
                 sensor_id,
@@ -95,7 +95,7 @@ def get_latest_readings():
                 building_id,
                 controller_id
             FROM sensor_readings
-            WHERE timestamp >= NOW() - INTERVAL '5 minutes'
+            WHERE timestamp >= NOW() - INTERVAL '24 hours'
             ORDER BY sensor_id, timestamp DESC
         """
         
@@ -200,7 +200,7 @@ def get_alerts():
                     ELSE 'Normal'
                 END as alert_type
             FROM sensor_readings
-            WHERE timestamp >= NOW() - INTERVAL '5 minutes'
+            WHERE timestamp >= NOW() - INTERVAL '24 hours'
                 AND (
                     temperature < 18 OR temperature > 26
                     OR humidity < 30 OR humidity > 70
@@ -365,7 +365,7 @@ def broadcast_data():
                     building_id,
                     controller_id
                 FROM sensor_readings
-                WHERE timestamp >= NOW() - INTERVAL '5 minutes'
+                WHERE timestamp >= NOW() - INTERVAL '24 hours'
                 ORDER BY sensor_id, timestamp DESC
             """
             
