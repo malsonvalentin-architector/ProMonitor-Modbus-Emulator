@@ -83,6 +83,11 @@ def get_latest_readings():
         conn = get_db_connection()
         cursor = conn.cursor()
         
+        # DEBUG: First check if table has ANY data
+        cursor.execute("SELECT COUNT(*) FROM sensor_readings")
+        total_count = cursor.fetchone()[0]
+        print(f"🔍 DEBUG: Total readings in DB: {total_count}")
+        
         # Get latest reading for each sensor (NO TIME FILTER - DEBUG)
         query = """
             SELECT DISTINCT ON (sensor_id) 
@@ -100,12 +105,13 @@ def get_latest_readings():
         
         cursor.execute(query)
         readings = cursor.fetchall()
+        print(f"🔍 DEBUG: Query returned {len(readings)} readings")
         
         cursor.close()
         conn.close()
         
         if not readings:
-            return jsonify({'success': False, 'error': 'No data'})
+            return jsonify({'success': False, 'error': f'No data (table has {total_count} rows)'})
         
         # Format results
         result = []
