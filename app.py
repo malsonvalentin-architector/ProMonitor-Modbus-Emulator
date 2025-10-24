@@ -4,7 +4,7 @@ ProMonitor Real-Time Dashboard v2.0
 Flask + SocketIO + PostgreSQL backend
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO, emit
 import psycopg2
 import os
@@ -83,11 +83,6 @@ def get_latest_readings():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # DEBUG: First check if table has ANY data
-        cursor.execute("SELECT COUNT(*) FROM sensor_readings")
-        total_count = cursor.fetchone()[0]
-        print(f"🔍 DEBUG: Total readings in DB: {total_count}")
-        
         # Get latest reading for each sensor (NO TIME FILTER - DEBUG)
         query = """
             SELECT DISTINCT ON (sensor_id) 
@@ -105,13 +100,12 @@ def get_latest_readings():
         
         cursor.execute(query)
         readings = cursor.fetchall()
-        print(f"🔍 DEBUG: Query returned {len(readings)} readings")
         
         cursor.close()
         conn.close()
         
         if not readings:
-            return jsonify({'success': False, 'error': f'No data (table has {total_count} rows)'})
+            return jsonify({'success': False, 'error': 'No data'})
         
         # Format results
         result = []
@@ -205,7 +199,7 @@ def get_alerts():
                     ELSE 'Normal'
                 END as alert_type
             FROM sensor_readings
-            WHERE timestamp >= NOW() - INTERVAL '24 hours'
+
                 AND (
                     temperature < 18 OR temperature > 26
                     OR humidity < 30 OR humidity > 70
@@ -334,55 +328,6 @@ def run_setup():
             'error': str(e)
         })
 
-@app.route('/api/test-db')
-def test_db():
-    """Comprehensive database diagnostic"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Get total count
-        cursor.execute("SELECT COUNT(*) FROM sensor_readings")
-        total = cursor.fetchone()[0]
-        
-        # Get timestamp range and server time
-        cursor.execute("SELECT MIN(timestamp), MAX(timestamp), NOW() FROM sensor_readings")
-        min_ts, max_ts, now_ts = cursor.fetchone()
-        
-        # Check recent data (24 hours)
-        cursor.execute("SELECT COUNT(*) FROM sensor_readings WHERE timestamp >= NOW() - INTERVAL '24 hours'")
-        recent_24h = cursor.fetchone()[0]
-        
-        # Check very recent (5 minutes)
-        cursor.execute("SELECT COUNT(*) FROM sensor_readings WHERE timestamp >= NOW() - INTERVAL '5 minutes'")
-        recent_5m = cursor.fetchone()[0]
-        
-        # Sample data
-        cursor.execute("SELECT sensor_id, timestamp, temperature, humidity FROM sensor_readings ORDER BY timestamp DESC LIMIT 5")
-        samples = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'total_readings': total,
-            'oldest_timestamp': str(min_ts) if min_ts else None,
-            'newest_timestamp': str(max_ts) if max_ts else None,
-            'server_time': str(now_ts),
-            'age_minutes': (now_ts - max_ts).total_seconds() / 60 if max_ts else None,
-            'readings_last_24h': recent_24h,
-            'readings_last_5m': recent_5m,
-            'samples': [{
-                'sensor_id': s[0],
-                'timestamp': str(s[1]),
-                'temperature': float(s[2]),
-                'humidity': float(s[3])
-            } for s in samples]
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
 # ============================================================
 # WEBSOCKET HANDLERS
 # ============================================================
@@ -419,6 +364,7 @@ def broadcast_data():
                     building_id,
                     controller_id
                 FROM sensor_readings
+    
                 ORDER BY sensor_id, timestamp DESC
             """
             
@@ -474,21 +420,3 @@ if __name__ == '__main__':
     
     # Run with eventlet for WebSocket support
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
-
-@app.route('/api/test-query')
-def test_query():
-    """Run direct SQL query test"""
-    try:
-        result = subprocess.run(
-            ['python3', 'test_query_exec.py'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        return jsonify({
-            'success': result.returncode == 0,
-            'output': result.stdout,
-            'error': result.stderr
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
