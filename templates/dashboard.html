@@ -48,13 +48,19 @@
             font-size: 1.1rem;
         }
         
+        .connection-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
         .connection-status {
             display: inline-block;
             padding: 8px 20px;
             border-radius: 20px;
             font-weight: 600;
             font-size: 0.9rem;
-            margin-top: 15px;
         }
         
         .connection-status.connected {
@@ -67,7 +73,50 @@
             color: white;
         }
         
+        .connection-status.paused {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-pause {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-pause:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+        
         /* Control Panel Styles */
+        .control-panel-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+        
+        .control-panel-header h2 {
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .control-panel-header p {
+            text-align: center;
+            color: #666;
+            margin: 0;
+        }
+        
         .scenarios-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -280,20 +329,21 @@
         <div class="header">
             <h1>🚀 ProMonitor v2.0 Real-Time Dashboard</h1>
             <p>Система мониторинга HVAC с интерактивным эмулятором сценариев</p>
-            <div class="connection-status disconnected" id="connectionStatus">
-                <span id="statusText">Подключение...</span>
+            <div class="connection-controls">
+                <div class="connection-status disconnected" id="connectionStatus">
+                    <span id="statusText">Подключение...</span>
+                </div>
+                <button class="btn-pause" id="pauseBtn" onclick="togglePause()">
+                    <span id="pauseText">⏸ Приостановить</span>
+                </button>
             </div>
         </div>
         
         <!-- Control Panel -->
         <div class="control-panel" style="margin-bottom: 30px;">
-            <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); margin-bottom: 30px;">
-                <h2 style="color: #667eea; font-weight: 700; margin-bottom: 20px; text-align: center;">
-                    🎮 Панель Управления Сценариями
-                </h2>
-                <p style="text-align: center; color: #666; margin-bottom: 30px;">
-                    Выберите датчик и запустите сценарий для имитации различных состояний системы HVAC
-                </p>
+            <div class="control-panel-header">
+                <h2>🎮 Панель Управления Сценариями</h2>
+                <p>Выберите датчик и запустите сценарий для имитации различных состояний системы HVAC</p>
             </div>
             
             <div class="scenarios-grid">
@@ -451,14 +501,19 @@
     </div>
     
     <script>
+        // Pause/Resume state
+        let isPaused = false;
+        
         // Initialize Socket.IO connection
         const socket = io();
         
         // Connection status handling
         socket.on('connect', () => {
             console.log('✅ Connected to server');
-            document.getElementById('connectionStatus').className = 'connection-status connected';
-            document.getElementById('statusText').textContent = 'Подключено';
+            if (!isPaused) {
+                document.getElementById('connectionStatus').className = 'connection-status connected';
+                document.getElementById('statusText').textContent = 'Подключено';
+            }
         });
         
         socket.on('disconnect', () => {
@@ -466,6 +521,26 @@
             document.getElementById('connectionStatus').className = 'connection-status disconnected';
             document.getElementById('statusText').textContent = 'Отключено';
         });
+        
+        // Pause/Resume toggle
+        function togglePause() {
+            isPaused = !isPaused;
+            const statusDiv = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            const pauseBtn = document.getElementById('pauseText');
+            
+            if (isPaused) {
+                statusDiv.className = 'connection-status paused';
+                statusText.textContent = 'Приостановлено';
+                pauseBtn.textContent = '▶ Возобновить';
+                console.log('⏸ Updates paused');
+            } else {
+                statusDiv.className = 'connection-status connected';
+                statusText.textContent = 'Подключено';
+                pauseBtn.textContent = '⏸ Приостановить';
+                console.log('▶ Updates resumed');
+            }
+        }
         
         // Initialize Charts
         const chartConfig = {
@@ -546,8 +621,14 @@
             }
         });
         
-        // Handle sensor updates
+        // Handle sensor updates from WebSocket
         socket.on('sensor_update', (data) => {
+            // Skip if paused
+            if (isPaused) {
+                console.log('⏸ Skipping update (paused)');
+                return;
+            }
+            
             console.log('📡 Received sensor update:', data);
             
             if (data.readings && data.readings.length > 0) {
@@ -640,9 +721,7 @@
             chart.update();
         }
         
-        // ========================================
-        // FIX: Load historical data on page load
-        // ========================================
+        // Load historical data on page load
         async function loadHistoricalData() {
             try {
                 console.log('📊 Loading historical data for sensor 1...');
@@ -692,7 +771,6 @@
             .then(data => {
                 if (data.success && data.data) {
                     updateMetrics(data.data);
-                    // Don't update charts here - wait for historical data
                 }
             })
             .catch(err => console.error('❌ Failed to fetch initial data:', err));
