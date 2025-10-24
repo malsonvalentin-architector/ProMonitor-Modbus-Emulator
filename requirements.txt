@@ -1,5 +1,5 @@
 Flask==3.0.0
 Flask-SocketIO==5.3.5
-eventlet==0.33.3
 psycopg2-binary==2.9.9
-python-dotenv==1.0.0
+eventlet==0.33.3
+# Updated: 2025-10-24 06:01:00 UTC
