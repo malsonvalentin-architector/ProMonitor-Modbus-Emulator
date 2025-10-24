@@ -1,8 +1,11 @@
+# Railway deployment configuration
+# Last updated: Fri Oct 24 05:59:00 UTC 2025
+
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python3 app.py"
+startCommand = "python app.py"
+healthcheckPath = "/"
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
