@@ -414,9 +414,13 @@ def handle_test_request():
 def broadcast_data():
     """Background thread to broadcast real-time data"""
     print("🔴 Real-time broadcast thread started")
+    iteration = 0
     
     while True:
         try:
+            iteration += 1
+            print(f"🔄 Broadcast iteration #{iteration}")
+            
             conn = get_db_connection()
             cursor = conn.cursor()
             
@@ -432,18 +436,19 @@ def broadcast_data():
                     building_id,
                     controller_id
                 FROM sensor_readings
-    
+                WHERE timestamp > NOW() - INTERVAL '5 minutes'
                 ORDER BY sensor_id, timestamp DESC
             """
             
             cursor.execute(query)
             readings = cursor.fetchall()
+            print(f"📊 Query returned {len(readings) if readings else 0} readings")
             
             cursor.close()
             conn.close()
             
             # Format and broadcast
-            if readings:
+            if readings and len(readings) > 0:
                 data = []
                 for r in readings:
                     data.append({
@@ -457,13 +462,18 @@ def broadcast_data():
                         'controller_id': r[7]
                     })
                 
+                print(f"📡 Broadcasting {len(data)} readings via WebSocket...")
                 socketio.emit('sensor_update', {'readings': data})
-                print(f"📡 Broadcasted {len(data)} readings")
+                print(f"✅ Broadcast completed")
+            else:
+                print("⚠️  No readings to broadcast (query returned empty)")
             
         except Exception as e:
             print(f"❌ Broadcast error: {e}")
+            import traceback
+            traceback.print_exc()
         
-        # Wait 10 seconds before next broadcast
+        # Wait 1 second before next broadcast
         time.sleep(1)
 
 # Import data generator functions
