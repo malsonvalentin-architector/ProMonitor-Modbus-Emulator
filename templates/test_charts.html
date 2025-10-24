@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Chart.js Auto-Update Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Chart Auto-Update Test</h1>
+    <canvas id="testChart" width="400" height="200"></canvas>
+    
+    <div id="debug"></div>
+    
+    <script>
+        const debugDiv = document.getElementById('debug');
+        
+        function log(msg) {
+            console.log(msg);
+            debugDiv.innerHTML += msg + '<br>';
+        }
+        
+        log('🔧 Initializing chart...');
+        
+        // Initialize chart
+        const testChart = new Chart(document.getElementById('testChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Test Data',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: {
+                    duration: 0
+                }
+            }
+        });
+        
+        log('✅ Chart initialized');
+        
+        // Initialize Socket.IO
+        const socket = io();
+        
+        socket.on('connect', () => {
+            log('✅ Socket connected');
+        });
+        
+        socket.on('sensor_update', (data) => {
+            log(`📡 Received update: ${data.readings ? data.readings.length : 0} readings`);
+            
+            if (data.readings && data.readings.length > 0) {
+                const now = new Date().toLocaleTimeString();
+                const avgTemp = data.readings.reduce((sum, r) => sum + (r.temperature || 0), 0) / data.readings.length;
+                
+                log(`📊 Adding data point: ${now} = ${avgTemp.toFixed(1)}°C`);
+                
+                testChart.data.labels.push(now);
+                testChart.data.datasets[0].data.push(avgTemp);
+                
+                // Keep only last 10 points
+                if (testChart.data.labels.length > 10) {
+                    testChart.data.labels.shift();
+                    testChart.data.datasets[0].data.shift();
+                }
+                
+                log('🔄 Calling chart.update()...');
+                testChart.update('none');
+                log('✅ Chart updated!');
+            }
+        });
+        
+        log('⏳ Waiting for sensor updates...');
+    </script>
+</body>
+</html>

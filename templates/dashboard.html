@@ -1182,6 +1182,8 @@
             console.log('📈 Building averages:', buildingAvgs);
             
             // Update all 5 datasets in each chart
+            console.log('🔥 Updating charts with data:', {tempChart: !!tempChart, humidityChart: !!humidityChart, co2Chart: !!co2Chart, pressureChart: !!pressureChart});
+            
             addMultiBuildingData(tempChart, timeLabel, buildingAvgs, 'temp', maxPoints);
             addMultiBuildingData(humidityChart, timeLabel, buildingAvgs, 'humidity', maxPoints);
             addMultiBuildingData(co2Chart, timeLabel, buildingAvgs, 'co2', maxPoints);
@@ -1191,6 +1193,12 @@
         }
         
         function addMultiBuildingData(chart, label, buildingAvgs, metric, maxPoints) {
+            // ✅ CRITICAL: Check if chart exists
+            if (!chart || !chart.data) {
+                console.error(`❌ Chart ${metric} не существует или не инициализирован!`);
+                return;
+            }
+            
             // ALWAYS add new data point (don't check for duplicate labels)
             // This ensures synchronized updates every second
             chart.data.labels.push(label);
