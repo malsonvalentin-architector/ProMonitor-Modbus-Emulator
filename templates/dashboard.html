@@ -1224,8 +1224,14 @@
                 });
             }
             
-            // Update chart without animation for smooth real-time updates
-            chart.update('none');
+            // Update chart - try different update modes
+            console.log(`🔄 Updating ${metric} chart - labels: ${chart.data.labels.length}, datasets: ${chart.data.datasets.length}`);
+            try {
+                chart.update('none'); // Update without animation
+                console.log(`✅ ${metric} chart.update() completed`);
+            } catch (error) {
+                console.error(`❌ Error updating ${metric} chart:`, error);
+            }
         }
         
         // Load historical data on page load
