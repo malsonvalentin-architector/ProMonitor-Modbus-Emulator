@@ -469,3 +469,14 @@ if __name__ == '__main__':
     
     # Run with eventlet for WebSocket support
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
+
+@app.route('/api/version')
+def version():
+    """Show current deployment version"""
+    import datetime
+    return jsonify({
+        'version': '2.0.1-autocommit-fix',
+        'timestamp': datetime.datetime.now().isoformat(),
+        'has_autocommit': 'autocommit=True' in open(__file__).read(),
+        'endpoints': [str(rule) for rule in app.url_map.iter_rules() if not rule.rule.startswith('/static')]
+    })
