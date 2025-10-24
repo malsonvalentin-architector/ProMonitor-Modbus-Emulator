@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+# Last Railway deploy trigger: Fri Oct 24 05:58:11 UTC 2025
 ProMonitor Real-Time Dashboard v2.0
 Flask + SocketIO + PostgreSQL backend
 """
