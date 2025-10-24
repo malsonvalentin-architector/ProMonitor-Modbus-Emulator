@@ -794,7 +794,7 @@
                     <span style="font-size: 24px;">🌡️</span>
                     <div>
                         <h3 class="chart-title">Температура (Real-time)</h3>
-                        <p class="chart-subtitle m-0">Обновление каждые 10 секунд</p>
+                        <p class="chart-subtitle m-0">Обновление каждые 2 секунды</p>
                     </div>
                 </div>
                 <canvas id="tempChart"></canvas>
@@ -805,7 +805,7 @@
                     <span style="font-size: 24px;">💧</span>
                     <div>
                         <h3 class="chart-title">Влажность (Real-time)</h3>
-                        <p class="chart-subtitle m-0">Обновление каждые 10 секунд</p>
+                        <p class="chart-subtitle m-0">Обновление каждые 2 секунды</p>
                     </div>
                 </div>
                 <canvas id="humidityChart"></canvas>
@@ -816,7 +816,7 @@
                     <span style="font-size: 24px;">🌬️</span>
                     <div>
                         <h3 class="chart-title">CO2 (Real-time)</h3>
-                        <p class="chart-subtitle m-0">Обновление каждые 10 секунд</p>
+                        <p class="chart-subtitle m-0">Обновление каждые 2 секунды</p>
                     </div>
                 </div>
                 <canvas id="co2Chart"></canvas>
@@ -827,7 +827,7 @@
                     <span style="font-size: 24px;">🌍</span>
                     <div>
                         <h3 class="chart-title">Давление (Real-time)</h3>
-                        <p class="chart-subtitle m-0">Обновление каждые 10 секунд</p>
+                        <p class="chart-subtitle m-0">Обновление каждые 2 секунды</p>
                     </div>
                 </div>
                 <canvas id="pressureChart"></canvas>
@@ -845,18 +845,11 @@
         // Connection status handling
         socket.on('connect', () => {
             console.log('✅ Connected to server');
-            console.log('🔍 Socket ID:', socket.id);
-            console.log('🔍 Socket connected:', socket.connected);
-            console.log('🔍 Transport:', socket.io.engine.transport.name);
             
             if (!isPaused) {
                 document.getElementById('connectionStatus').className = 'connection-status connected';
                 document.getElementById('statusText').textContent = 'Подключено';
             }
-            
-            // 🚨 CRITICAL TEST: Manually request a test emission
-            console.log('🧪 Requesting test emission from server...');
-            socket.emit('request_test_update');
         });
         
         socket.on('disconnect', () => {
@@ -1423,7 +1416,7 @@
                         }
                     });
                     
-                    console.log('🏢 Building stats updated');
+                    // Building stats updated
                 }
             } catch (err) {
                 console.error('❌ Failed to load building stats:', err);

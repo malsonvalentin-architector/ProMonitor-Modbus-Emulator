@@ -82,10 +82,11 @@ def index():
     """Serve main dashboard"""
     return render_template('dashboard.html')
 
-@app.route('/test')
-def test_charts():
-    """Test page for chart auto-update debugging"""
-    return render_template('test_charts.html')
+# Test page disabled in production
+# @app.route('/test')
+# def test_charts():
+#     """Test page for chart auto-update debugging"""
+#     return render_template('test_charts.html')
 
 @app.route('/api/readings/latest')
 def get_latest_readings():
@@ -399,17 +400,12 @@ def handle_disconnect():
     """Handle client disconnection"""
     print('🔌 Client disconnected')
 
-@socketio.on('request_test_update')
-def handle_test_request():
-    """🧪 TEST: Manual emission to verify WebSocket works"""
-    print('🧪 Received test request - sending test emission')
-    test_data = {
-        'readings': [
-            {'sensor_id': 'TEST', 'temperature': 99.9, 'humidity': 99.9, 'co2': 999, 'pressure': 9.99, 'building_id': 1}
-        ]
-    }
-    emit('sensor_update', test_data, broadcast=True)
-    print('✅ Test emission sent')
+# Test handler disabled in production
+# @socketio.on('request_test_update')
+# def handle_test_request():
+#     print('Test request received')
+#     test_data = {'readings': [{'sensor_id': 'TEST', 'temperature': 99.9, 'building_id': 1}]}
+#     emit('sensor_update', test_data, broadcast=True)
 
 def broadcast_data():
     """Background thread to broadcast real-time data"""
@@ -419,7 +415,7 @@ def broadcast_data():
     while True:
         try:
             iteration += 1
-            print(f"🔄 Broadcast iteration #{iteration}")
+            # Broadcast iteration (verbose logging disabled)
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -442,7 +438,7 @@ def broadcast_data():
             
             cursor.execute(query)
             readings = cursor.fetchall()
-            print(f"📊 Query returned {len(readings) if readings else 0} readings")
+            # Query executed
             
             cursor.close()
             conn.close()
@@ -462,11 +458,11 @@ def broadcast_data():
                         'controller_id': r[7]
                     })
                 
-                print(f"📡 Broadcasting {len(data)} readings via WebSocket...")
+                # Broadcasting readings via WebSocket
                 socketio.emit('sensor_update', {'readings': data})
-                print(f"✅ Broadcast completed")
+                # Broadcast completed
             else:
-                print("⚠️  No readings to broadcast (query returned empty)")
+                pass  # No readings to broadcast
             
         except Exception as e:
             print(f"❌ Broadcast error: {e}")
