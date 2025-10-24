@@ -1,18 +1,14 @@
+# ProMonitor v2.0 Dockerfile
+# Build timestamp: 2025-10-24 05:59:30 UTC
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy application files
 COPY requirements.txt .
-COPY app.py .
-COPY setup_database.py .
-COPY templates/ ./templates/
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port (Railway provides PORT env variable)
+COPY . .
+
 EXPOSE 8080
 
-# Run application
-CMD ["python3", "app.py"]
+CMD ["python", "app.py"]
