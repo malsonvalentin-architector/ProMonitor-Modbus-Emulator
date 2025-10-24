@@ -310,6 +310,41 @@ def diagnostic():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/db-direct-test')
+def db_direct_test():
+    """Ultra-simple direct DB test without any helpers"""
+    import psycopg2
+    import os
+    try:
+        # Direct connection
+        conn = psycopg2.connect(
+            host=os.environ.get('PGHOST', 'postgres.railway.internal'),
+            port=os.environ.get('PGPORT', '5432'),
+            database=os.environ.get('POSTGRES_DB', 'railway'),
+            user=os.environ.get('POSTGRES_USER', 'postgres'),
+            password=os.environ.get('POSTGRES_PASSWORD', '')
+        )
+        cursor = conn.cursor()
+        
+        # Simple count
+        cursor.execute("SELECT COUNT(*) FROM sensor_readings")
+        count = cursor.fetchone()[0]
+        
+        # Get first 3 rows
+        cursor.execute("SELECT sensor_id, timestamp, temperature FROM sensor_readings LIMIT 3")
+        rows = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'total_count': count,
+            'sample_rows': [{'sensor_id': r[0], 'timestamp': str(r[1]), 'temperature': float(r[2])} for r in rows]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/run-setup', methods=['POST'])
 def run_setup():
     """Run database setup script"""
