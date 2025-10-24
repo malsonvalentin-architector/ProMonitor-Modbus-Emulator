@@ -4,7 +4,7 @@ ProMonitor Real-Time Dashboard v2.0
 Flask + SocketIO + PostgreSQL backend
 """
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 import psycopg2
 import os
